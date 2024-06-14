@@ -5,8 +5,8 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 ## Progress
 
 ### Tasks remaining:
-1. PID control for angular velocity
-2. Interfacing IMU and fusing data with wheel encoders
+1. Tuning PID constants
+2. Interfacing IMU and fusing data with wheel encoders using an EKF
 ### Tasks completed:
 1. PID control for linear velocity
 ## Issues
