@@ -15,6 +15,6 @@ None :)
 ## Updates
 
 ### Version 1.3.0 
-  -> Teleop keyboard control being used\n
-  -> SLAM working, accuracy issues present\n
-  -> Wheel encoder data being used without IMU, might be causing a loss in accuracy\n
+  -> Teleop keyboard control being used\
+  -> SLAM working, accuracy issues present\
+  -> Wheel encoder data being used without IMU, might be causing a loss in accuracy\
