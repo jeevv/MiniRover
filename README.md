@@ -5,10 +5,10 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 ## Progress
 
 ### Tasks remaining:
-1. Tuning PID constants
-2. Interfacing IMU and fusing data with wheel encoders using an EKF
-   -> IMU code complete but yet to be tested
-   -> EKF pending
+1. Tuning PID constants\
+2. Interfacing IMU and fusing data with wheel encoders using an EKF\
+   -> IMU code complete but yet to be tested\
+   -> EKF pending\
 3. Converting existing STM32 code to tasks using FreeRTOS
 ### Tasks completed:
 
@@ -24,10 +24,10 @@ A repo containing various software utilised by Astra Robotics in our rover proje
   -> Used cmd_vel to control motor speed\
   -> Interfaced a 2D lidar to publish to /scan using ROS drivers\
 ### Version 1.1.0
-  -> Used slam_toolbox to generate maps 
-  -> Used wheel encoders for odomtery
+  -> Used slam_toolbox to generate maps\
+  -> Used wheel encoders for odomtery\
   -> Used teleop_twist_keyboard to publish to cmd_vel\
 ### Version 1.2.0 (Current)
   -> Completed writing code for PID control for linear and angular velocity\
-  -> Completed writing code to interface IMU
+  -> Completed writing code to interface IMU\
   
