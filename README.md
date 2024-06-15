@@ -22,11 +22,11 @@ A repo containing various software utilised by Astra Robotics in our rover proje
   -> Created interrupts to interface wheel encoders and published them to ROS topic\
   -> Interfaced motor drivers with the STM32 using PWM\
   -> Used cmd_vel to control motor speed\
-  -> Interfaced a 2D lidar to publish to /scan using ROS drivers\
+  -> Interfaced a 2D lidar to publish to /scan using ROS drivers
 ### Version 1.1.0
   -> Used slam_toolbox to generate maps\
   -> Used wheel encoders for odomtery\
-  -> Used teleop_twist_keyboard to publish to cmd_vel\
+  -> Used teleop_twist_keyboard to publish to cmd_vel
 ### Version 1.2.0 (Current)
   -> Completed writing code for PID control for linear and angular velocity\
   -> Completed writing code to interface IMU
