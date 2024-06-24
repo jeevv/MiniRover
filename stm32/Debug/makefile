@@ -39,23 +39,23 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := HAL
+BUILD_ARTIFACT_NAME := mini_rover_project
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-HAL.elf \
+mini_rover_project.elf \
 
 MAP_FILES += \
-HAL.map \
+mini_rover_project.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-HAL.list \
+mini_rover_project.list \
 
 
 # All Target
@@ -63,11 +63,11 @@ all:
 	+@$(MAKE) --no-print-directory pre-build && $(MAKE) --no-print-directory main-build
 
 # Main-build Target
-main-build: HAL.elf secondary-outputs
+main-build: mini_rover_project.elf secondary-outputs
 
 # Tool invocations
-HAL.elf HAL.map: $(OBJS) $(USER_OBJS) /home/jeevottam/STM32CubeIDE/my_ws/HAL/STM32F411VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "HAL.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/jeevottam/STM32CubeIDE/my_ws/HAL/STM32F411VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="HAL.map" -Wl,--gc-sections -static -L../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+mini_rover_project.elf mini_rover_project.map: $(OBJS) $(USER_OBJS) /home/bala/STM32CubeIDE/workspace_1.15.1/mini_rover_project/STM32F411VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "mini_rover_project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/bala/STM32CubeIDE/workspace_1.15.1/mini_rover_project/STM32F411VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mini_rover_project.map" -Wl,--gc-sections -static -L/home/bala/STM32CubeIDE/workspace_1.15.1/mini_rover_project/micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -76,18 +76,18 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-HAL.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "HAL.list"
+mini_rover_project.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "mini_rover_project.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) HAL.elf HAL.list HAL.map default.size.stdout
+	-$(RM) default.size.stdout mini_rover_project.elf mini_rover_project.list mini_rover_project.map
 	-@echo ' '
 
 pre-build:
-	docker pull microros/micro_ros_static_library_builder:humble && docker run --rm -v /home/jeevottam/STM32CubeIDE/my_ws/HAL:/project --env MICROROS_LIBRARY_FOLDER=micro_ros_stm32cubemx_utils/microros_static_library_ide microros/micro_ros_static_library_builder:humble
+	docker pull microros/micro_ros_static_library_builder:humble && docker run --rm -v /home/bala/STM32CubeIDE/workspace_1.15.1/mini_rover_project:/project --env MICROROS_LIBRARY_FOLDER=micro_ros_stm32cubemx_utils/microros_static_library_ide microros/micro_ros_static_library_builder:humble
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)

@@ -156,6 +156,7 @@ geometry_msgs/PoseArray.msg
 geometry_msgs/Point32.msg
 geometry_msgs/AccelWithCovarianceStamped.msg
 geometry_msgs/TransformStamped.msg
+geometry_msgs/VelocityStamped.msg
 geometry_msgs/PointStamped.msg
 geometry_msgs/TwistWithCovariance.msg
 geometry_msgs/AccelStamped.msg

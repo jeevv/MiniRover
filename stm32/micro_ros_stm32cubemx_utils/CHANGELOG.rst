@@ -2,9 +2,30 @@
 Changelog for package micro_ros_stmcube
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-4.1.0 (2023-06-12)
+5.0.1 (2024-06-03)
 ------------------
-* Update branches (`#101 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/101>`_)
+* Bump jazzy (`#145 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/145>`_)
+* Add UDP transport (`#134 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/134>`_) (`#135 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/135>`_)
+  * Add UDP transport
+  * Apply suggestions from code review
+  Co-authored-by: Pablo Garrido <pablogs9@gmail.com>
+  * Update README and modify recv flag
+  * Update udp_transport.c
+  * Apply suggestions from code review
+  Co-authored-by: Pablo Garrido <pablogs9@gmail.com>
+  * Update udp_transport.c
+  * Minor fixes on readme
+  ---------
+  Co-authored-by: Pablo Garrido <pablogs9@gmail.com>
+  (cherry picked from commit 0dbe8b656cf48ef6b8194f047029711fc09cc9bb)
+  Co-authored-by: Lion Hao <haolion520@gmail.com>
+* Workaround to use STMCubeIDE in Windows 11 (backport `#127 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/127>`_) (`#129 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/129>`_)
+  Co-authored-by: Pablo Garrido <pablogs9@gmail.com>
+  Co-authored-by: Leonardo <leogarberoglio@hotmail.com>
+* Contributors: Pablo Garrido, mergify[bot]
+
+5.0.0 (2023-06-12)
+------------------
 * Add USB CDC transport (backport `#89 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/89>`_) (`#93 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/93>`_)
 * Fix minor branches (`#81 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/81>`_)
 * Improved repository clarity (`#74 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/74>`_) (`#75 <https://github.com/micro-ROS/micro_ros_stm32cubemx_utils/issues/75>`_)

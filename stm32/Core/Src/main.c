@@ -31,7 +31,7 @@
 #include <rmw_microros/rmw_microros.h>
 
 #include <std_msgs/msg/int16.h>
-
+#include <sensor_msgs/msg/imu.h>
 #include <geometry_msgs/msg/twist.h>
 #include <stdio.h>
 #include <string.h>
@@ -50,9 +50,26 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 
+//I2C address of the MPU6050
+#define MPU_ADDRESS 0x68
+// Register to check if MPU is working
+#define MPU_REG_AVAILABLE 0x75
+// Register to turn on sensor and set clock rate
+#define MPU_REG_PWR_MGMT_1 0x6b
+// Register to reduce sampling rate
+#define MPU_REG_SMPL_RT_DIV 0x19
+// Accelerometer and gyroscope configuration register
+#define MPU_REG_GYRO_CONFIG 0x1b
+#define MPU_REG_ACC_CONFIG 0x1c
+// Starting address of the six registers storing accelerometer values
+#define MPU_REG_ACC_X_H 0x3b
+// Starting address of the six registers storing gyroscope values
+#define MPU_REG_GYRO_X_H 0x43
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart2;
@@ -67,8 +84,8 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-static int32_t LeftWheelEncoder=0;
-static int32_t RightWheelEncoder=0;
+volatile int32_t LeftWheelEncoder=0;
+volatile int32_t RightWheelEncoder=0;
 
 double LeftWheelVelocity;
 double RightWheelVelocity;
@@ -86,6 +103,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_I2C1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -101,14 +119,16 @@ void subscription_cmd_vel_callback(const void * msgin)
 	LeftWheelVelocity = msg->linear.x - msg->angular.z*Length;
 	RightWheelVelocity = msg->linear.x + msg->angular.z*Length;
 
-
-	LeftMotorSpeed = (int)(LeftWheelVelocity/WheelRadius) * 60/6.2831;            //w of motor in rpm
+	//w of motor in rpm
+	LeftMotorSpeed = (int)(LeftWheelVelocity/WheelRadius) * 60/6.2831;
 	RightMotorSpeed = (int)(RightWheelVelocity/WheelRadius) * 60/6.2831;
 
 	//PWM2 Right motor PA6
 	//PWM1 Right motor PA7
 	//PWM2 Left motor PB1
 	//PWM1 Left motor PB0
+
+	// Fix the going beyond 1000 value in the ROS code
 
 	if (LeftMotorSpeed>=0 && LeftMotorSpeed<=1000 && RightMotorSpeed>=0 && RightMotorSpeed<=1000)	//front
 	{
@@ -146,44 +166,21 @@ void subscription_cmd_vel_callback(const void * msgin)
 		TIM3->CCR4 = 0;
 	}
 
-//	if (msg->linear.x >= 0) {
-////		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
-////		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
-//		TIM3->CCR1 = 200*msg->linear.x;
-//		TIM3->CCR2 = 0;
-//		TIM3->CCR3 = 200*msg->linear.x;
-//		TIM3->CCR4 = 0;
-//
-//	}
-//	else {
-////		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
-////		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
-//		TIM3->CCR1 = 0;
-//		TIM3->CCR2 = -200*msg->linear.x;
-//		TIM3->CCR3 = 0;
-//		TIM3->CCR4 = -200*msg->linear.x;
-//	}
 }
 
+// Interrupts for the wheel encoders
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if (GPIO_Pin == GPIO_PIN_0)					//PA0 LeftWheelEncoderChannelA  PE11 LeftWheelEncoderChannelB
+	//PA0 LeftWheelEncoderChannelA  PE11 LeftWheelEncoderChannelB
+	if (GPIO_Pin == GPIO_PIN_0)
 	{
 //		LeftWheelEncoder++;
 		if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_11) == 1) LeftWheelEncoder++;
 		else if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_11) == 0) LeftWheelEncoder--;
 
-//		switch(HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_11))
-//		{
-//		case 0:
-//			LeftWheelEncoder--;
-//			break;
-//		case 1:
-//			LeftWheelEncoder++;
-//			break;
-//		}
 	}
-	else if (GPIO_Pin == GPIO_PIN_1)					//PA1 RightWheelEncoderChannelA  PE12 RightWheelEncoderChannelB
+	//PA1 RightWheelEncoderChannelA  PE12 RightWheelEncoderChannelB
+	else if (GPIO_Pin == GPIO_PIN_1)
 	{
 //		RightWheelEncoder++;
 		if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_12) == 0) RightWheelEncoder++;
@@ -224,6 +221,7 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_TIM3_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
@@ -321,6 +319,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -484,10 +516,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -517,9 +549,30 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 
-	  // micro-ROS configuration
+	// Initialisation of MPU6050
+	// Checking if sensor returns 0x68 to confirm correct functioning
 
-	  rmw_uros_set_custom_transport(
+	uint8_t check = 0;
+	uint8_t data = 0;
+	HAL_I2C_Mem_Read (&hi2c1, MPU_ADDRESS,MPU_REG_AVAILABLE,1, &check, 1, 1000);
+
+	if (check!=0x68)
+	{
+		printf("MPU6050 connected incorrectly\n");
+	}
+
+	// Writing zeros to the register to wake up the sensor and
+	// set clock frequency to 8 MHz
+
+	HAL_I2C_Mem_Write(&hi2c1, MPU_ADDRESS, MPU_REG_PWR_MGMT_1, 1,&data, 1, 1000);
+
+	// Set DATA RATE of 1KHz by writing SMPLRT_DIV register
+	data = 0x07;
+	HAL_I2C_Mem_Write(&hi2c1, MPU_ADDRESS, MPU_REG_SMPL_RT_DIV	, 1, &data, 1, 1000);
+
+	// micro-ROS configuration
+
+	rmw_uros_set_custom_transport(
 	    true,
 	    (void *) &huart2,
 	    cubemx_transport_open,
@@ -527,13 +580,13 @@ void StartDefaultTask(void *argument)
 	    cubemx_transport_write,
 	    cubemx_transport_read);
 
-	  rcl_allocator_t freeRTOS_allocator = rcutils_get_zero_initialized_allocator();
-	  freeRTOS_allocator.allocate = microros_allocate;
-	  freeRTOS_allocator.deallocate = microros_deallocate;
-	  freeRTOS_allocator.reallocate = microros_reallocate;
-	  freeRTOS_allocator.zero_allocate =  microros_zero_allocate;
+	 rcl_allocator_t freeRTOS_allocator = rcutils_get_zero_initialized_allocator();
+	 freeRTOS_allocator.allocate = microros_allocate;
+	 freeRTOS_allocator.deallocate = microros_deallocate;
+	 freeRTOS_allocator.reallocate = microros_reallocate;
+	 freeRTOS_allocator.zero_allocate =  microros_zero_allocate;
 
-	  if (!rcutils_set_default_allocator(&freeRTOS_allocator)) {
+	 if (!rcutils_set_default_allocator(&freeRTOS_allocator)) {
 	      printf("Error on default allocators (line %d)\n", __LINE__);
 	  }
 
@@ -541,9 +594,11 @@ void StartDefaultTask(void *argument)
 
 	  rcl_publisher_t publisher1;
 	  rcl_publisher_t publisher2;
+	  rcl_publisher_t imu_publisher;
 	  rcl_subscription_t subscriber_cmd_vel;
 	  std_msgs__msg__Int16 msg1;
 	  std_msgs__msg__Int16 msg2;
+	  sensor_msgs__msg__Imu imu_data;
 	  geometry_msgs__msg__Twist sub_cmd_vel_msg;
 	  rclc_support_t support;
 	  rcl_allocator_t allocator;
@@ -565,33 +620,75 @@ void StartDefaultTask(void *argument)
 	    "lwheel");
 
 	  rclc_publisher_init_default(
-	  	    &publisher2,
-	  	    &node,
-	  	    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16),
-	  	    "rwheel");
+	  	&publisher2,
+	  	&node,
+	  	ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16),
+	  	"rwheel");
+
+	  rclc_publisher_init_default(
+	  	&imu_publisher,
+	  	&node,
+	  	ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
+	  	"Imu");
 
 	  // create subscriber
 
-	  	  rclc_subscription_init_default(
+	  rclc_subscription_init_default(
 	  	     &subscriber_cmd_vel,
 	  	     &node,
 	  	     ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
 	  	     "cmd_vel");
 
-	  	// create executor
-	  	rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
-	  	rclc_executor_init(&executor, &support.context, 2, &allocator);
-	  	rclc_executor_add_subscription(&executor, &subscriber_cmd_vel, &sub_cmd_vel_msg, &subscription_cmd_vel_callback, ON_NEW_DATA);
+	  // create executor
+	  rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
+	  rclc_executor_init(&executor, &support.context, 2, &allocator);
+	  rclc_executor_add_subscription(&executor, &subscriber_cmd_vel, &sub_cmd_vel_msg, &subscription_cmd_vel_callback, ON_NEW_DATA);
 
 	  for(;;)
 	  {
+
+		// Reading values using IMU
+
+		// Reading 6 elements of 1 byte each
+		// x, y, z values occupy 16 bits each, divided into two registers for
+		// higher and lower bytes
+		uint8_t rec_data[6] = {0,0,0,0,0,0};
+		HAL_I2C_Mem_Read (&hi2c1, MPU_ADDRESS, MPU_REG_ACC_X_H, 1, rec_data, 6, 1000);
+
+		// Converting two separate 8-bit values into a single 16-bit value
+		int16_t accel_x_raw = (int16_t)(rec_data[0] << 8 | rec_data [1]);
+		int16_t accel_y_raw = (int16_t)(rec_data[2] << 8 | rec_data [3]);
+		int16_t accel_z_raw = (int16_t)(rec_data[4] << 8 | rec_data [5]);
+
+		// Dividing by 16384 to obtain actual value and storing it in Imu message
+		imu_data.linear_acceleration.x = (double) accel_x_raw/16384.0;
+		imu_data.linear_acceleration.y = (double) accel_y_raw/16384.0;
+		imu_data.linear_acceleration.z = (double) accel_z_raw/16384.0;
+
+		// Doing the same for the gyroscope values
+		HAL_I2C_Mem_Read (&hi2c1, MPU_ADDRESS, MPU_REG_GYRO_X_H, 1, rec_data, 6, 1000);
+
+		int16_t gyro_x_raw = (int16_t)(rec_data[0] << 8 | rec_data [1]);
+		int16_t gyro_y_raw  = (int16_t)(rec_data[2] << 8 | rec_data [3]);
+		int16_t gyro_z_raw  = (int16_t)(rec_data[4] << 8 | rec_data [5]);
+
+		// Dividing by 131.0 to obtain actual values and storing in Imu message
+		imu_data.angular_velocity.x = (double) gyro_x_raw/131.0;
+		imu_data.angular_velocity.y = (double) gyro_y_raw/131.0;
+		imu_data.angular_velocity.z = (double) gyro_z_raw/131.0;
+
 		msg1.data = LeftWheelEncoder;
 		msg2.data = RightWheelEncoder;
+
 	    rcl_ret_t ret1 = rcl_publish(&publisher1, &msg1, NULL);
 	    rcl_ret_t ret2 = rcl_publish(&publisher2, &msg2, NULL);
-	    rclc_executor_spin_some(&executor, 1000);    						// waits for 1000ns for ros data, theres no data it continues, if there is data then it executes subscription callback
+	    rcl_ret_t ret3 = rcl_publish(&imu_publisher, &imu_data, NULL);
 
-	    if ((ret1 | ret2) != RCL_RET_OK)
+	    // waits for 1000ns for ros data, theres no data it continues,
+	    // if there is data then it executes subscription callback
+	    rclc_executor_spin_some(&executor, 1000);
+
+	    if ((ret1 | ret2 | ret3) != RCL_RET_OK)
 	    {
 	      printf("Error publishing (line %d)\n", __LINE__);
 	    }

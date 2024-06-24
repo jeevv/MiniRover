@@ -22,6 +22,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
@@ -186,9 +188,18 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/detail/int16__functions.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/rosidl_generator_c__visibility_control.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/detail/int16__type_support.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/imu.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/detail/imu__struct.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/detail/header__struct.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/rosidl_runtime_c/string.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/rosidl_runtime_c/primitives_sequence.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/quaternion__struct.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/vector3__struct.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/detail/imu__functions.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/rosidl_generator_c__visibility_control.h \
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/detail/imu__type_support.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/twist.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist__struct.h \
- ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/vector3__struct.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist__functions.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/rosidl_generator_c__visibility_control.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist__type_support.h
@@ -216,6 +227,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h:
+../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h:
+../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
@@ -380,9 +393,18 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/detail/int16__functions.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/rosidl_generator_c__visibility_control.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/detail/int16__type_support.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/imu.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/detail/imu__struct.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/std_msgs/msg/detail/header__struct.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/rosidl_runtime_c/string.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/rosidl_runtime_c/primitives_sequence.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/quaternion__struct.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/vector3__struct.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/detail/imu__functions.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/rosidl_generator_c__visibility_control.h:
+../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/sensor_msgs/msg/detail/imu__type_support.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/twist.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist__struct.h:
-../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/vector3__struct.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist__functions.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/rosidl_generator_c__visibility_control.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist__type_support.h:
