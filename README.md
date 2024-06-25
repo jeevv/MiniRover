@@ -9,7 +9,6 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 2. Interfacing IMU and fusing data with wheel encoders using an EKF\
    -> IMU code complete but yet to be tested\
    -> EKF pending
-3. Converting existing STM32 code to tasks using FreeRTOS
 ### Tasks completed:
 
 ## Issues
