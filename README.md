@@ -27,7 +27,9 @@ A repo containing various software utilised by Astra Robotics in our rover proje
   -> Used slam_toolbox to generate maps\
   -> Used wheel encoders for odomtery\
   -> Used teleop_twist_keyboard to publish to cmd_vel
-### Version 1.2.0 (Current)
+### Version 1.2.0 
   -> Completed writing code for PID control for linear and angular velocity\
   -> Completed writing code to interface IMU
-  
+### Version 1.3.0
+  -> Completed code for IMU interfacing and publishing
+  -> Nav2 waypoint navigation in progress
