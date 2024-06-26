@@ -7,7 +7,7 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 ### Tasks remaining:
 1. Tuning PID constants
 2. Interfacing IMU and fusing data with wheel encoders using an EKF\
-   -> IMU code complete but yet to be tested\
+   -> IMU code complete but yet to be tested
 ### Tasks completed:
 
 ## Helpful tips
