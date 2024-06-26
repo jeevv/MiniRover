@@ -8,7 +8,6 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 1. Tuning PID constants
 2. Interfacing IMU and fusing data with wheel encoders using an EKF\
    -> IMU code complete but yet to be tested\
-   -> EKF pending
 ### Tasks completed:
 
 ## Helpful tips
@@ -30,5 +29,6 @@ command to run ekf - ros2 run robot_localization ekf_node --ros-args --params-fi
   -> Used teleop_twist_keyboard to publish to cmd_vel
 ### Version 1.2.0 (Current)
   -> Completed writing code for PID control for linear and angular velocity\
-  -> Completed writing code to interface IMU
+  -> Completed writing code to interface IMU\
+  -> EKF working
   
