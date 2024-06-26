@@ -33,6 +33,7 @@
 #include <std_msgs/msg/int16.h>
 #include <sensor_msgs/msg/imu.h>
 #include <geometry_msgs/msg/twist.h>
+#include <nav_msgs/msg/odometry.h>
 #include <stdio.h>
 #include <string.h>
 /* USER CODE END Includes */
@@ -65,6 +66,9 @@
 #define MPU_REG_ACC_X_H 0x3b
 // Starting address of the six registers storing gyroscope values
 #define MPU_REG_GYRO_X_H 0x43
+
+// Macro to calculate encoder velocity
+#define encoderDistance(ticks) 2*3.1416*ticks/512;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -87,11 +91,11 @@ const osThreadAttr_t defaultTask_attributes = {
 volatile int32_t LeftWheelEncoder=0;
 volatile int32_t RightWheelEncoder=0;
 
-double LeftWheelVelocity;
-double RightWheelVelocity;
+double LeftWheelVelocity=0;
+double RightWheelVelocity=0;
 
-double LeftMotorSpeed;
-double RightMotorSpeed;
+double LeftMotorSpeed=0;
+double RightMotorSpeed=0;
 
 const double Length = 0.225;    //distance between wheel and center of bot
 const double WheelRadius = 0.07;
@@ -591,13 +595,11 @@ void StartDefaultTask(void *argument)
 	  }
 
 	  // micro-ROS app
-
-	  rcl_publisher_t publisher1;
-	  rcl_publisher_t publisher2;
+	  //nav_msgs/msg/Odometry
+	  rcl_publisher_t encoder_publisher;
 	  rcl_publisher_t imu_publisher;
 	  rcl_subscription_t subscriber_cmd_vel;
-	  std_msgs__msg__Int16 msg1;
-	  std_msgs__msg__Int16 msg2;
+	  nav_msgs__msg__Odometry encoder_data;
 	  sensor_msgs__msg__Imu imu_data;
 	  geometry_msgs__msg__Twist sub_cmd_vel_msg;
 	  rclc_support_t support;
@@ -614,22 +616,16 @@ void StartDefaultTask(void *argument)
 
 	  // create publisher
 	  rclc_publisher_init_default(
-	    &publisher1,
+	    &encoder_publisher,
 	    &node,
-	    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16),
-	    "lwheel");
-
-	  rclc_publisher_init_default(
-	  	&publisher2,
-	  	&node,
-	  	ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16),
-	  	"rwheel");
+	    ROSIDL_GET_MSG_TYPE_SUPPORT(nav_msgs, msg, Odometry),
+	    "rover/wheel_encoder_odom");
 
 	  rclc_publisher_init_default(
 	  	&imu_publisher,
 	  	&node,
 	  	ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-	  	"Imu");
+	  	"rover/imu");
 
 	  // create subscriber
 
@@ -643,6 +639,17 @@ void StartDefaultTask(void *argument)
 	  rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
 	  rclc_executor_init(&executor, &support.context, 2, &allocator);
 	  rclc_executor_add_subscription(&executor, &subscriber_cmd_vel, &sub_cmd_vel_msg, &subscription_cmd_vel_callback, ON_NEW_DATA);
+
+	  // Initialise variables used to get velocities of the wheels
+	  int32_t prevLeftWheelEncoder = 0;
+	  int32_t prevRightWheelEncoder = 0;
+
+	  double LeftWheelDistance = 0;
+	  double RightWheelDistance = 0;
+
+	  // Function is used to get time elapsed in milliseconds since SysTick timer was turned on
+	  uint32_t prevTime = HAL_GetTick();
+	  uint32_t currentTime = 0;
 
 	  for(;;)
 	  {
@@ -677,18 +684,32 @@ void StartDefaultTask(void *argument)
 		imu_data.angular_velocity.y = (double) gyro_y_raw/131.0;
 		imu_data.angular_velocity.z = (double) gyro_z_raw/131.0;
 
-		msg1.data = LeftWheelEncoder;
-		msg2.data = RightWheelEncoder;
+		// Code block to convert wheel velocities to linear x and angular z
+		// Calculate distances covered by the wheels
+		LeftWheelDistance = encoderDistance(LeftWheelEncoder - prevLeftWheelEncoder);
+		RightWheelDistance = encoderDistance(RightWheelEncoder - prevRightWheelEncoder);
+		currentTime = HAL_GetTick();
 
-	    rcl_ret_t ret1 = rcl_publish(&publisher1, &msg1, NULL);
-	    rcl_ret_t ret2 = rcl_publish(&publisher2, &msg2, NULL);
-	    rcl_ret_t ret3 = rcl_publish(&imu_publisher, &imu_data, NULL);
+		// Convert wheel velocities to bot velocities
+		// Calculate distance covered and change in agngle
+		// Divide by delta time to get velocities
+		encoder_data.twist.twist.linear.x = (double) (RightWheelDistance + LeftWheelDistance)/(2*(currentTime-prevTime));
+		encoder_data.twist.twist.angular.z = (double) (RightWheelDistance - LeftWheelDistance)/(2*Length*(currentTime-prevTime));
+
+		// Update previous values of encoders and time
+		prevLeftWheelEncoder = LeftWheelEncoder;
+		prevRightWheelEncoder = RightWheelEncoder;
+		prevTime = HAL_GetTick();
+
+		// Publish data
+	    rcl_ret_t ret1 = rcl_publish(&encoder_publisher, &encoder_data, NULL);
+	    rcl_ret_t ret2 = rcl_publish(&imu_publisher, &imu_data, NULL);
 
 	    // waits for 1000ns for ros data, theres no data it continues,
 	    // if there is data then it executes subscription callback
 	    rclc_executor_spin_some(&executor, 1000);
 
-	    if ((ret1 | ret2 | ret3) != RCL_RET_OK)
+	    if ((ret1 | ret2) != RCL_RET_OK)
 	    {
 	      printf("Error publishing (line %d)\n", __LINE__);
 	    }
