@@ -1,6 +1,6 @@
 # The Astra Rover Project
 
-A repo containing code to be tested for the Astra Rover
+Code to be tested
 
 ## Changelog
   -> Completed code for IMU interfacing and publishing\
