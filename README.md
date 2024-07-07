@@ -8,6 +8,8 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 1. Tuning PID constants
 2. Interfacing IMU and fusing data with wheel encoders using an EKF\
    -> IMU code complete but yet to be tested
+3. Write code for the Zed2 camera\
+https://www.stereolabs.com/docs/ros2/zed-node\
 ### Tasks completed:
 
 ## Helpful tips
