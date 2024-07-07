@@ -5,8 +5,7 @@ A repo containing various software utilised by Astra Robotics in our rover proje
 ## Progress
 
 ### Tasks remaining:
-1. Write code for the Zed2 camera\
-https://www.stereolabs.com/docs/ros2/zed-node\
+1. Write code for the depth camera
 2. Implement nav2 planner and controller servers using Commander API\
 https://docs.nav2.org/commander_api/index.html#overview
 ### Tasks completed:
