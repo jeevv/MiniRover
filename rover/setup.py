@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pid_control = rover.pid:main'
+            'pid_control = rover.pid:main',
+            'autonomous_nav = rover.autonomous_nav:main'
         ],
     },
 )

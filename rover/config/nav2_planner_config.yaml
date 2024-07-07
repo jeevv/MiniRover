@@ -1,0 +1,9 @@
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 20.0
+    planner_plugins: ['GridBased']
+    GridBased:
+      plugin: 'nav2_navfn_planner::NavfnPlanner' # In Iron and older versions, "/" was used instead of "::"
+      use_astar: True
+      # Tolerance in meters for required end goal
+      tolerance: 0.5
