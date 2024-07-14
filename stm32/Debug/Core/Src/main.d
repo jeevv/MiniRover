@@ -211,7 +211,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/geometry_msgs/msg/detail/twist_with_covariance__struct.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/detail/odometry__functions.h \
  ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/rosidl_generator_c__visibility_control.h \
- ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/detail/odometry__type_support.h
+ ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/detail/odometry__type_support.h \
+ ../Core/Inc/mpu6050.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -426,3 +427,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/detail/odometry__functions.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/rosidl_generator_c__visibility_control.h:
 ../micro_ros_stm32cubemx_utils/microros_static_library_ide/libmicroros/include/nav_msgs/msg/detail/odometry__type_support.h:
+../Core/Inc/mpu6050.h:

@@ -36,6 +36,9 @@
 #include <nav_msgs/msg/odometry.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "mpu6050.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,22 +53,6 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
-//I2C address of the MPU6050
-#define MPU_ADDRESS 0x68
-// Register to check if MPU is working
-#define MPU_REG_AVAILABLE 0x75
-// Register to turn on sensor and set clock rate
-#define MPU_REG_PWR_MGMT_1 0x6b
-// Register to reduce sampling rate
-#define MPU_REG_SMPL_RT_DIV 0x19
-// Accelerometer and gyroscope configuration register
-#define MPU_REG_GYRO_CONFIG 0x1b
-#define MPU_REG_ACC_CONFIG 0x1c
-// Starting address of the six registers storing accelerometer values
-#define MPU_REG_ACC_X_H 0x3b
-// Starting address of the six registers storing gyroscope values
-#define MPU_REG_GYRO_X_H 0x43
 
 // Macro to calculate encoder velocity
 #define encoderDistance(ticks) 2*3.1416*ticks/512;
@@ -554,25 +541,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 
 	// Initialisation of MPU6050
-	// Checking if sensor returns 0x68 to confirm correct functioning
-
-	uint8_t check = 0;
-	uint8_t data = 0;
-	HAL_I2C_Mem_Read (&hi2c1, MPU_ADDRESS,MPU_REG_AVAILABLE,1, &check, 1, 1000);
-
-	if (check!=0x68)
-	{
-		printf("MPU6050 connected incorrectly\n");
-	}
-
-	// Writing zeros to the register to wake up the sensor and
-	// set clock frequency to 8 MHz
-
-	HAL_I2C_Mem_Write(&hi2c1, MPU_ADDRESS, MPU_REG_PWR_MGMT_1, 1,&data, 1, 1000);
-
-	// Set DATA RATE of 1KHz by writing SMPLRT_DIV register
-	data = 0x07;
-	HAL_I2C_Mem_Write(&hi2c1, MPU_ADDRESS, MPU_REG_SMPL_RT_DIV	, 1, &data, 1, 1000);
+	MPU_Init(&hi2c1);
 
 	// micro-ROS configuration
 
@@ -653,36 +622,19 @@ void StartDefaultTask(void *argument)
 
 	  for(;;)
 	  {
+		mpu_raw_data raw_data;
+		mpu_scaled_data scaled_data;
 
-		// Reading values using IMU
+		raw_data = MPU_Read_Raw_Data(&hi2c1);
+		scaled_data = MPU_Scale_Data(raw_data);
 
-		// Reading 6 elements of 1 byte each
-		// x, y, z values occupy 16 bits each, divided into two registers for
-		// higher and lower bytes
-		uint8_t rec_data[6] = {0,0,0,0,0,0};
-		HAL_I2C_Mem_Read (&hi2c1, MPU_ADDRESS, MPU_REG_ACC_X_H, 1, rec_data, 6, 1000);
+		imu_data.linear_acceleration.x = scaled_data.ax;
+		imu_data.linear_acceleration.y = scaled_data.ay;
+		imu_data.linear_acceleration.z = scaled_data.az;
 
-		// Converting two separate 8-bit values into a single 16-bit value
-		int16_t accel_x_raw = (int16_t)(rec_data[0] << 8 | rec_data [1]);
-		int16_t accel_y_raw = (int16_t)(rec_data[2] << 8 | rec_data [3]);
-		int16_t accel_z_raw = (int16_t)(rec_data[4] << 8 | rec_data [5]);
-
-		// Dividing by 16384 to obtain actual value and storing it in Imu message
-		imu_data.linear_acceleration.x = (double) accel_x_raw/16384.0;
-		imu_data.linear_acceleration.y = (double) accel_y_raw/16384.0;
-		imu_data.linear_acceleration.z = (double) accel_z_raw/16384.0;
-
-		// Doing the same for the gyroscope values
-		HAL_I2C_Mem_Read (&hi2c1, MPU_ADDRESS, MPU_REG_GYRO_X_H, 1, rec_data, 6, 1000);
-
-		int16_t gyro_x_raw = (int16_t)(rec_data[0] << 8 | rec_data [1]);
-		int16_t gyro_y_raw  = (int16_t)(rec_data[2] << 8 | rec_data [3]);
-		int16_t gyro_z_raw  = (int16_t)(rec_data[4] << 8 | rec_data [5]);
-
-		// Dividing by 131.0 to obtain actual values and storing in Imu message
-		imu_data.angular_velocity.x = (double) gyro_x_raw/131.0;
-		imu_data.angular_velocity.y = (double) gyro_y_raw/131.0;
-		imu_data.angular_velocity.z = (double) gyro_z_raw/131.0;
+		imu_data.angular_velocity.x = scaled_data.gx;
+		imu_data.angular_velocity.y = scaled_data.gy;
+		imu_data.angular_velocity.z = scaled_data.gz;
 
 		// Code block to convert wheel velocities to linear x and angular z
 		// Calculate distances covered by the wheels
