@@ -39,7 +39,7 @@ class PID_ROS : public rclcpp::Node
 
       pwm_publisher_left = this->create_publisher<std_msgs::msg::Int32>("/left_motor_pwm",10);
 
-      pwm_publisher_left = this->create_publisher<std_msgs::msg::Int32>("/right_motor_pwm",10);
+      pwm_publisher_right = this->create_publisher<std_msgs::msg::Int32>("/right_motor_pwm",10);
 
     }
 
