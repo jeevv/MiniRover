@@ -10,21 +10,48 @@
 
 using std::placeholders::_1;
 
+/*
+Class used to implement PID control for a 4 wheel skid steer robot using ROS2
+
+Utilises the PID class to seperate control of linear and angular velocities. The left wheels and 
+right wheels are assumed to have the same velocity
+
+Paramters:
+(double) linear_x, angular_z: Used to store the velocity of the bot from the odometry
+(double) target_linear_x, target_linear_z: Target velocity from cmd_vel
+(PID) linear_vel_pid, angular_z_pid: Used for the PID control of linear and angular velocity
+*/
 class PID_ROS : public rclcpp::Node
 {
   public:
 
     double linear_x, angular_z;
 
-    double linear_x_prev, angular_z_prev;
-
     double target_linear_x, target_angular_z;
 
     PID linear_vel_pid, angular_vel_pid;
 
-    PID_ROS(float kp_linear, float kd_linear, float ki_linear, float kp_angular, float kd_angular, float ki_angular)
+    /*
+    Constructor used to initialise the ROS2 node and PID constant parameters
+
+    Parameters:
+    (double) kp_linear,kd_linear,ki_linear: PID constants for linear velocity
+    (double) kp_angular,kd_angular, ki_angular: PID constants for angular velocity
+
+    (std_msgs::msg::Int32) left_motor_pwm, right_motor_pwm: ROS2 messages publsihed to topics 
+    to  control motor PWM. Capped at 1000 and always postitive.
+
+    (rclcpp::Subscription) odom_subscription, cmd_vel_subscription: ROS2 subscribers 
+    for odometry and cmd_vel
+    (rclcpp::Publisher) pwm_publisher_left, pwm_publisher_right: ROS2 publishers for motor PWM
+    */
+
+    PID_ROS(double kp_linear, double kd_linear, double ki_linear, double kp_angular, double kd_angular, double ki_angular)
     : Node("pid_node")
     {
+      // Initialising two PID variables and copying them into the class paramters. Might need 
+      // different initialisation
+
       PID linear_vel_pid(kp_linear,kd_linear,ki_linear);
 
       PID angular_vel_pid(kp_angular,kd_angular,ki_angular);
@@ -44,12 +71,14 @@ class PID_ROS : public rclcpp::Node
     }
 
   private:
-
+    /*
+    Function used to compute linear and angular PID using odomtery and target velocity
+    */
     void odom_callback(const nav_msgs::msg::Odometry & msg)
     {
-      float linear_pwm = linear_vel_pid.compute(msg.twist.twist.linear.x - linear_x_prev, (double) PID_ROS::now().nanoseconds()/1000000000);
+      double linear_pwm = linear_vel_pid.compute(target_linear_x - msg.twist.twist.linear.x, (double) PID_ROS::now().nanoseconds()/1000000000);
 
-      float angular_pwm = angular_vel_pid.compute(msg.twist.twist.angular.z - angular_z_prev, (double) PID_ROS::now().nanoseconds()/1000000000);
+      double angular_pwm = angular_vel_pid.compute(target_angular_z - msg.twist.twist.angular.z, (double) PID_ROS::now().nanoseconds()/1000000000);
 
       left_motor_pwm.data = (int32_t) (linear_pwm - angular_pwm);
 
@@ -81,6 +110,9 @@ class PID_ROS : public rclcpp::Node
 
     }
 
+    /*
+    Function used to update target velocity from cmd_vel
+    */
     void cmd_vel_callback(const geometry_msgs::msg::Twist & msg)
     {
       target_linear_x = msg.linear.x;
@@ -94,10 +126,6 @@ class PID_ROS : public rclcpp::Node
     rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pwm_publisher_left,pwm_publisher_right;
 
     std_msgs::msg::Int32 left_motor_pwm, right_motor_pwm;
-
-    nav_msgs::msg::Odometry robot_odom;
-
-    rclcpp::Clock clock;
 };
 
 int main(int argc, char **argv)

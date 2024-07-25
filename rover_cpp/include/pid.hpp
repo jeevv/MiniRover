@@ -2,10 +2,21 @@
 
 #define _PID_LIB
 
+/*
+
+Class to contain PID constants and functions
+
+Members:
+(double) kp,kd,ki: The PID constants, can only be initialised through the constructor
+(double) error_prev: The previous error used to calculate the derivative term
+(double) error_sum: The sum of all error used to calculate the integral term
+ */
 class PID
 {
     public:
-
+        /*
+        Constructor used to initialise the PID constants
+        */
         PID()
         {
             _kp = 0;
@@ -13,16 +24,28 @@ class PID
             _ki = 0;
         }
 
-        PID(float kp, float kd, float ki)
+        PID(double kp, double kd, double ki)
         {
             _kp = kp;
             _kd = kd;
             _ki = ki;
         }
+        /*
+        Function used to calculate the PID output
 
-        float compute(float error_new, double dt)
+        Calculates a PID output using the curent error, previous error, and sum of errors.
+        Also updates the previous error and sum.
+
+        Parameters:
+        (double) error_new: The current error
+        (double) dt: The difference in time required to calculate derivative and integral
+
+        Returns:
+        (double) result: The PID output
+        */
+        double compute(double error_new, double dt)
         {
-            float result  = _kp*error_new + _kd*error_prev/dt + _ki*error_sum;
+            double result  = _kp*error_new + _kd*error_prev/dt + _ki*error_sum*dt;
 
             error_prev = error_new;
 
@@ -32,9 +55,10 @@ class PID
         }
 
     protected:
-        float _kp,_kd,_ki;
 
-        float error_prev,error_sum;
+        double _kp,_kd,_ki;
+
+        double error_prev,error_sum;
 };
 
 #endif
