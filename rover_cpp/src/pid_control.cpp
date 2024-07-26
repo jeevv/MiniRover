@@ -8,6 +8,8 @@
 
 #include "std_msgs/msg/int32.hpp"
 
+#include "std_msgs/msg/int32_multi_array.hpp"
+
 using std::placeholders::_1;
 
 /*
@@ -38,12 +40,12 @@ class PID_ROS : public rclcpp::Node
     (double) kp_linear,kd_linear,ki_linear: PID constants for linear velocity
     (double) kp_angular,kd_angular, ki_angular: PID constants for angular velocity
 
-    (std_msgs::msg::Int32) left_motor_pwm, right_motor_pwm: ROS2 messages publsihed to topics 
-    to  control motor PWM. Capped at 1000 and always postitive.
+    (std_msgs::msg::Int32MultiArray) motor_pwm: ROS2 message that contains left and right motor pwm
+    to  control motor PWM. Left motor at 0 index and right motor at 1 index. Capped at 1000 and always postitive.
 
     (rclcpp::Subscription) odom_subscription, cmd_vel_subscription: ROS2 subscribers 
     for odometry and cmd_vel
-    (rclcpp::Publisher) pwm_publisher_left, pwm_publisher_right: ROS2 publishers for motor PWM
+    (rclcpp::Publisher) pwm_publisher: ROS2 publisher for motor PWM
     */
 
     PID_ROS(double kp_linear, double kd_linear, double ki_linear, double kp_angular, double kd_angular, double ki_angular)
@@ -64,9 +66,7 @@ class PID_ROS : public rclcpp::Node
 
       cmd_vel_subscription = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel",10,std::bind(&PID_ROS::cmd_vel_callback, this, _1));
 
-      pwm_publisher_left = this->create_publisher<std_msgs::msg::Int32>("/left_motor_pwm",10);
-
-      pwm_publisher_right = this->create_publisher<std_msgs::msg::Int32>("/right_motor_pwm",10);
+      pwm_publisher = this->create_publisher<std_msgs::msg::Int32MultiArray>("/motor_pwm",10);
 
     }
 
@@ -80,33 +80,33 @@ class PID_ROS : public rclcpp::Node
 
       double angular_pwm = angular_vel_pid.compute(target_angular_z - msg.twist.twist.angular.z, (double) PID_ROS::now().nanoseconds()/1000000000);
 
-      left_motor_pwm.data = (int32_t) (linear_pwm - angular_pwm);
+      motor_pwm.data[0] = (int32_t) (linear_pwm - angular_pwm);
 
-      right_motor_pwm.data = (int32_t) (linear_pwm + angular_pwm);
+      motor_pwm.data[1] = (int32_t) (linear_pwm + angular_pwm);
 
-      if(left_motor_pwm.data<0)
+      // Limit the motor PWM to between 0 and 1000
+
+      if(motor_pwm.data[0]<0)
       {
-        left_motor_pwm.data = 0;
+        motor_pwm.data[0] = 0;
       }
 
-      else if(left_motor_pwm.data>1000)
+      else if(motor_pwm.data[0]>1000)
       {
-        left_motor_pwm.data = 1000;
+        motor_pwm.data[0] = 1000;
       }
 
-      if(right_motor_pwm.data<0)
+      if(motor_pwm.data[1]<0)
       {
-        right_motor_pwm.data = 0;
+        motor_pwm.data[1] = 0;
       }
 
-      else if(right_motor_pwm.data>1000)
+      else if(motor_pwm.data[1]>1000)
       {
-        right_motor_pwm.data = 1000;
+        motor_pwm.data[1] = 1000;
       }
 
-      pwm_publisher_left->publish(left_motor_pwm);
-
-      pwm_publisher_right->publish(right_motor_pwm);
+      pwm_publisher->publish(motor_pwm);
 
     }
 
@@ -123,9 +123,9 @@ class PID_ROS : public rclcpp::Node
 
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscription;
 
-    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pwm_publisher_left,pwm_publisher_right;
+    rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr pwm_publisher;
 
-    std_msgs::msg::Int32 left_motor_pwm, right_motor_pwm;
+    std_msgs::msg::Int32MultiArray motor_pwm;
 };
 
 int main(int argc, char **argv)
