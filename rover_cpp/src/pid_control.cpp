@@ -80,30 +80,23 @@ class PID_ROS : public rclcpp::Node
 
       double angular_pwm = angular_vel_pid.compute(target_angular_z - msg.twist.twist.angular.z, (double) PID_ROS::now().nanoseconds()/1000000000);
 
-      motor_pwm.data[0] = (int32_t) (linear_pwm - angular_pwm);
+      int pid_output[4] = {0,0,0,0};
 
-      motor_pwm.data[1] = (int32_t) (linear_pwm + angular_pwm);
+      pid_output[0] = (int32_t) (linear_pwm - angular_pwm);
 
-      // Limit the motor PWM to between 0 and 1000
+      pid_output[2] = (int32_t) (linear_pwm + angular_pwm);
 
-      if(motor_pwm.data[0]<0)
+      // Convert both PID outputs, same variable can be used for both conversions 
+      // as the function only operates on start_index and start_index + 1 leaving the
+      // remaining data untouched
+
+      convert_pid_output(pid_output,0);
+      convert_pid_output(pid_output,2);
+
+      // Not sure why standard assignment doesn't work but this solution does
+      for(int i = 0;i<4;i++)
       {
-        motor_pwm.data[0] = 0;
-      }
-
-      else if(motor_pwm.data[0]>1000)
-      {
-        motor_pwm.data[0] = 1000;
-      }
-
-      if(motor_pwm.data[1]<0)
-      {
-        motor_pwm.data[1] = 0;
-      }
-
-      else if(motor_pwm.data[1]>1000)
-      {
-        motor_pwm.data[1] = 1000;
+        motor_pwm.data[i] = pid_output[i];
       }
 
       pwm_publisher->publish(motor_pwm);
@@ -119,6 +112,46 @@ class PID_ROS : public rclcpp::Node
       target_angular_z = msg.angular.z;
     }
 
+    /*
+    Function used to convert the PID output into PWM for the motors, value always between 0 and 1000
+    due to STM32 PWM setup. The PWM is written to two indices, the start_index and start_index + 1 which can
+    be passed as arguments for increased flexibility. Might need variable name change.
+    */
+
+    void convert_pid_output(int *pid_output, int start_index)
+    {
+      if(pid_output[start_index] < 0)
+      {
+        if(pid_output[start_index] < -1000)
+        {
+          pid_output[start_index+1] = 1000;
+        }
+
+        else
+        {
+          pid_output[start_index+1] = -pid_output[0];
+        }
+
+        pid_output[start_index] = 0;
+
+      }
+
+      else if(pid_output[start_index] >= 0)
+      {
+        if(pid_output[start_index] > 1000)
+        {
+          pid_output[start_index] = 1000;
+        }
+
+        // Else statement in not required as PID output is a positive value less than 1000 
+        // and does not need changing 
+
+        pid_output[start_index+1] = 0;
+
+      }
+
+    }
+
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscription;
 
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscription;
@@ -126,6 +159,7 @@ class PID_ROS : public rclcpp::Node
     rclcpp::Publisher<std_msgs::msg::Int32MultiArray>::SharedPtr pwm_publisher;
 
     std_msgs::msg::Int32MultiArray motor_pwm;
+
 };
 
 int main(int argc, char **argv)
