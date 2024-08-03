@@ -103,61 +103,6 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void subscription_cmd_vel_callback(const void * msgin)
-{
-	geometry_msgs__msg__Twist * msg = (geometry_msgs__msg__Twist *)msgin;
-
-	LeftWheelVelocity = msg->linear.x - msg->angular.z*Length;
-	RightWheelVelocity = msg->linear.x + msg->angular.z*Length;
-
-	//w of motor in rpm
-	LeftMotorSpeed = (int)(LeftWheelVelocity/WheelRadius) * 60/6.2831;
-	RightMotorSpeed = (int)(RightWheelVelocity/WheelRadius) * 60/6.2831;
-
-	//PWM2 Right motor PA6
-	//PWM1 Right motor PA7
-	//PWM2 Left motor PB1
-	//PWM1 Left motor PB0
-
-	// Fix the going beyond 1000 value in the ROS code
-
-	if (LeftMotorSpeed>=0 && LeftMotorSpeed<=1000 && RightMotorSpeed>=0 && RightMotorSpeed<=1000)	//front
-	{
- 		TIM3->CCR1 = LeftMotorSpeed;
-		TIM3->CCR2 = 0;
-		TIM3->CCR3 = RightMotorSpeed;
-		TIM3->CCR4 = 0;
-	}
-	else if (LeftMotorSpeed<=0 && LeftMotorSpeed>=-1000 && RightMotorSpeed<=0 && RightMotorSpeed>=-1000)	//back
-	{
-		TIM3->CCR1 = 0;
-		TIM3->CCR2 = -LeftMotorSpeed;
-		TIM3->CCR3 = 0;
-		TIM3->CCR4 = -RightMotorSpeed;
-	}
-	else if (LeftMotorSpeed<=0 && LeftMotorSpeed>=-1000 && RightMotorSpeed>=0 && RightMotorSpeed<=1000)		//left
-	{
-		TIM3->CCR1 = -LeftMotorSpeed;
-		TIM3->CCR2 = 0;
-		TIM3->CCR3 = 0;
-		TIM3->CCR4 = RightMotorSpeed;
-	}
-	else if (LeftMotorSpeed>=0 && LeftMotorSpeed<=1000 && RightMotorSpeed<=0 && RightMotorSpeed>=-1000)		//right
-	{
-		TIM3->CCR1 = 0;
-		TIM3->CCR2 = LeftMotorSpeed;
-		TIM3->CCR3 = -RightMotorSpeed;
-		TIM3->CCR4 = 0;
-	}
-	else
-	{
-		TIM3->CCR1 = 0;
-		TIM3->CCR2 = 0;
-		TIM3->CCR3 = 0;
-		TIM3->CCR4 = 0;
-	}
-
-}
 
 void subscription_motor_pwm_callback(const void *msgin)
 {
@@ -581,17 +526,20 @@ void StartDefaultTask(void *argument)
 	  }
 
 	  // micro-ROS app
-	  //nav_msgs/msg/Odometry
 	  rcl_publisher_t encoder_publisher;
 	  rcl_publisher_t imu_publisher;
-	  rcl_subscription_t subscriber_cmd_vel;
 	  rcl_subscription_t subscriber_motor_pwm;
 	  nav_msgs__msg__Odometry encoder_data;
 	  sensor_msgs__msg__Imu imu_data;
-	  geometry_msgs__msg__Twist sub_cmd_vel_msg;
+	  std_msgs__msg__Int32MultiArray sub_motor_pwm_msg;
 	  rclc_support_t support;
 	  rcl_allocator_t allocator;
 	  rcl_node_t node;
+
+	  // Initialise memory required by the multi array msg
+	  sub_motor_pwm_msg.data.capacity = 100;
+	  sub_motor_pwm_msg.data.data = (int32_t *) malloc(4 * sizeof(int32_t));
+	  sub_motor_pwm_msg.data.size = 4;
 
 	  allocator = rcl_get_default_allocator();
 
@@ -624,7 +572,7 @@ void StartDefaultTask(void *argument)
 	  // create executor
 	  rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
 	  rclc_executor_init(&executor, &support.context, 2, &allocator);
-	  rclc_executor_add_subscription(&executor, &subscriber_cmd_vel, &sub_cmd_vel_msg, &subscription_cmd_vel_callback, ON_NEW_DATA);
+	  rclc_executor_add_subscription(&executor, &subscriber_motor_pwm, &sub_motor_pwm_msg, &subscription_motor_pwm_callback, ON_NEW_DATA);
 
 	  // Initialise variables used to get velocities of the wheels
 	  int32_t prevLeftWheelEncoder = 0;
@@ -636,6 +584,20 @@ void StartDefaultTask(void *argument)
 	  // Function is used to get time elapsed in milliseconds since SysTick timer was turned on
 	  uint32_t prevTime = HAL_GetTick();
 	  uint32_t currentTime = 0;
+
+	  // Initialise memory required by the IMU message
+	  // Arrays and headers require initialisation dynamically or statically
+	  // MicrROS docs cover this in more detail
+	  imu_data.header.frame_id.capacity = 100;
+	  imu_data.header.frame_id.data = (char *) malloc(imu_data.header.frame_id.capacity * sizeof(char));
+
+	  // Initialising all covariances to 0, need to fix this
+	  for(int i=0;i<9;i++)
+	  {
+		  imu_data.angular_velocity_covariance[i] = (double) 0.0;
+		  imu_data.linear_acceleration_covariance[i] = (double) 0.0;
+		  imu_data.orientation_covariance[i] = (double) 0.0;
+	  }
 
 	  for(;;)
 	  {
