@@ -31,10 +31,10 @@
 #include <rmw_microros/rmw_microros.h>
 
 #include <std_msgs/msg/int16.h>
+#include <std_msgs/msg/int32_multi_array.h>
 #include <sensor_msgs/msg/imu.h>
 #include <geometry_msgs/msg/twist.h>
 #include <nav_msgs/msg/odometry.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "mpu6050.h"
@@ -157,6 +157,23 @@ void subscription_cmd_vel_callback(const void * msgin)
 		TIM3->CCR4 = 0;
 	}
 
+}
+
+void subscription_motor_pwm_callback(const void *msgin)
+{
+	std_msgs__msg__Int32MultiArray *motor_pwm = (std_msgs__msg__Int32MultiArray *) msgin;
+
+	// Assigning a capacity of 100 from microros example code
+	// Data needs some space allocated either statically or dynamically
+	// Size indicates number of elements
+	motor_pwm->data.capacity = 100;
+	motor_pwm->data.data = (int32_t *) malloc(4*sizeof(int32_t));
+	motor_pwm->data.size = 4;
+
+	TIM3->CCR1 = motor_pwm->data.data[0];
+	TIM3->CCR2 = motor_pwm->data.data[1];
+	TIM3->CCR3 = motor_pwm->data.data[2];
+	TIM3->CCR4 = motor_pwm->data.data[3];
 }
 
 // Interrupts for the wheel encoders
@@ -568,6 +585,7 @@ void StartDefaultTask(void *argument)
 	  rcl_publisher_t encoder_publisher;
 	  rcl_publisher_t imu_publisher;
 	  rcl_subscription_t subscriber_cmd_vel;
+	  rcl_subscription_t subscriber_motor_pwm;
 	  nav_msgs__msg__Odometry encoder_data;
 	  sensor_msgs__msg__Imu imu_data;
 	  geometry_msgs__msg__Twist sub_cmd_vel_msg;
@@ -597,12 +615,11 @@ void StartDefaultTask(void *argument)
 	  	"rover/imu");
 
 	  // create subscriber
-
 	  rclc_subscription_init_default(
-	  	     &subscriber_cmd_vel,
-	  	     &node,
-	  	     ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-	  	     "cmd_vel");
+	  	  	     &subscriber_motor_pwm,
+	  	  	     &node,
+	  	  	     ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+	  	  	     "motor_pwm");
 
 	  // create executor
 	  rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
